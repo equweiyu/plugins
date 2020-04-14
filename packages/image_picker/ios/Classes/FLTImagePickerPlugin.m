@@ -96,10 +96,21 @@ static const int SOURCE_GALLERY = 1;
       (NSString *)kUTTypeMovie, (NSString *)kUTTypeAVIMovie, (NSString *)kUTTypeVideo,
       (NSString *)kUTTypeMPEG4
     ];
-    _imagePickerController.videoQuality = UIImagePickerControllerQualityTypeHigh;
-
     self.result = result;
     _arguments = call.arguments;
+      
+      bool origin = [[_arguments objectForKey:@"iosOrigin"] boolValue];
+      if (origin) {
+          if (@available(iOS 11.0, *)) {
+              _imagePickerController.videoExportPreset = AVAssetExportPresetPassthrough;
+          }
+          
+      } else {
+          _imagePickerController.videoQuality = UIImagePickerControllerQualityTypeHigh;
+          
+      }
+
+
 
     int imageSource = [[_arguments objectForKey:@"source"] intValue];
     if ([[_arguments objectForKey:@"maxDuration"] isKindOfClass:[NSNumber class]]) {
@@ -256,29 +267,47 @@ static const int SOURCE_GALLERY = 1;
     return;
   }
   if (videoURL != nil) {
-    if (@available(iOS 13.0, *)) {
-      NSString *fileName = [videoURL lastPathComponent];
-      NSURL *destination =
-          [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:fileName]];
-
-      if ([[NSFileManager defaultManager] isReadableFileAtPath:[videoURL path]]) {
-        NSError *error;
-        if (![[videoURL path] isEqualToString:[destination path]]) {
-          [[NSFileManager defaultManager] copyItemAtURL:videoURL toURL:destination error:&error];
-
-          if (error) {
-            self.result([FlutterError errorWithCode:@"flutter_image_picker_copy_video_error"
-                                            message:@"Could not cache the video file."
-                                            details:nil]);
-            self.result = nil;
-            return;
+      
+      bool origin = [[_arguments objectForKey:@"iosOrigin"] boolValue];
+      
+      if (origin) {
+          NSURL *videoRef = info[UIImagePickerControllerReferenceURL];
+          PHFetchResult *refResult = [PHAsset fetchAssetsWithALAssetURLs:@[videoRef] options:nil];
+          PHVideoRequestOptions *videoRequestOptions = [[PHVideoRequestOptions alloc] init];
+          videoRequestOptions.version = PHVideoRequestOptionsVersionOriginal;
+          [[PHImageManager defaultManager] requestAVAssetForVideo:[refResult firstObject] options:videoRequestOptions resultHandler:^(AVAsset *asset, AVAudioMix *audioMix, NSDictionary *info) {
+              if ([asset isKindOfClass:[AVURLAsset class]]) {
+                  NSURL *originURL = [(AVURLAsset *)asset URL];
+                  self.result(originURL.path);
+                  self.result = nil;
+                  // Now you have the URL of the original video.
+              }
+          }];
+      } else {
+          if (@available(iOS 13.0, *)) {
+              NSString *fileName = [videoURL lastPathComponent];
+              NSURL *destination =
+              [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:fileName]];
+              
+              if ([[NSFileManager defaultManager] isReadableFileAtPath:[videoURL path]]) {
+                  NSError *error;
+                  if (![[videoURL path] isEqualToString:[destination path]]) {
+                      [[NSFileManager defaultManager] copyItemAtURL:videoURL toURL:destination error:&error];
+                      
+                      if (error) {
+                          self.result([FlutterError errorWithCode:@"flutter_image_picker_copy_video_error"
+                                                          message:@"Could not cache the video file."
+                                                          details:nil]);
+                          self.result = nil;
+                          return;
+                      }
+                  }
+                  videoURL = destination;
+              }
           }
-        }
-        videoURL = destination;
+          self.result(videoURL.path);
+          self.result = nil;
       }
-    }
-    self.result(videoURL.path);
-    self.result = nil;
 
   } else {
     UIImage *image = [info objectForKey:UIImagePickerControllerEditedImage];

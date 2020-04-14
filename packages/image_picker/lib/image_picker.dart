@@ -113,14 +113,16 @@ class ImagePicker {
   static Future<File> pickVideo(
       {@required ImageSource source,
       CameraDevice preferredCameraDevice = CameraDevice.rear,
-      Duration maxDuration}) async {
+      Duration maxDuration,
+      bool iosOrigin = false}) async {
     assert(source != null);
     final String path = await _channel.invokeMethod<String>(
       'pickVideo',
       <String, dynamic>{
         'source': source.index,
         'maxDuration': maxDuration?.inSeconds,
-        'cameraDevice': preferredCameraDevice.index
+        'cameraDevice': preferredCameraDevice.index,
+        'iosOrigin':iosOrigin,
       },
     );
     return path == null ? null : File(path);
