@@ -27,6 +27,7 @@ static const int SOURCE_GALLERY = 1;
   UIImagePickerController *_imagePickerController;
   UIViewController *_viewController;
   UIImagePickerControllerCameraDevice _device;
+  AVAsset *videoAsset;
 }
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
@@ -265,30 +266,56 @@ static const int SOURCE_GALLERY = 1;
     return;
   }
   if (videoURL != nil) {
-      
-      if (@available(iOS 13.0, *)) {
-          NSString *fileName = [videoURL lastPathComponent];
-          NSURL *destination =
-          [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:fileName]];
+      bool origin = [[_arguments objectForKey:@"iosOrigin"] boolValue];
+      if (origin) {
           
-          if ([[NSFileManager defaultManager] isReadableFileAtPath:[videoURL path]]) {
-              NSError *error;
-              if (![[videoURL path] isEqualToString:[destination path]]) {
-                  [[NSFileManager defaultManager] copyItemAtURL:videoURL toURL:destination error:&error];
-                  
-                  if (error) {
-                      self.result([FlutterError errorWithCode:@"flutter_image_picker_copy_video_error"
-                                                      message:@"Could not cache the video file."
-                                                      details:nil]);
-                      self.result = nil;
-                      return;
+          NSURL *videoRef = info[UIImagePickerControllerReferenceURL];
+
+
+          PHFetchResult *refResult = [PHAsset fetchAssetsWithALAssetURLs:@[videoRef] options:nil];
+          PHVideoRequestOptions *videoRequestOptions = [[PHVideoRequestOptions alloc] init];
+          videoRequestOptions.version = PHVideoRequestOptionsVersionOriginal;
+          videoRequestOptions.networkAccessAllowed = YES;
+          
+          [[PHImageManager defaultManager] requestAVAssetForVideo:[refResult firstObject] options:videoRequestOptions resultHandler:^(AVAsset *asset, AVAudioMix *audioMix, NSDictionary *info) {
+              self->videoAsset = asset;
+              if ([asset isKindOfClass:[AVURLAsset class]]) {
+                  NSURL *originURL = [(AVURLAsset *)asset URL];
+                  NSFileManager *fileManager = [NSFileManager defaultManager];
+                  BOOL isExist = [fileManager fileExistsAtPath:originURL.path];
+                  if (isExist) {
+                      self.result(originURL.path);
+                  } else {
+                      self.result(videoURL.path);
                   }
+                  self.result = nil;
               }
-              videoURL = destination;
+          }];
+      } else {
+          if (@available(iOS 13.0, *)) {
+              NSString *fileName = [videoURL lastPathComponent];
+              NSURL *destination =
+              [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:fileName]];
+              
+              if ([[NSFileManager defaultManager] isReadableFileAtPath:[videoURL path]]) {
+                  NSError *error;
+                  if (![[videoURL path] isEqualToString:[destination path]]) {
+                      [[NSFileManager defaultManager] copyItemAtURL:videoURL toURL:destination error:&error];
+                      
+                      if (error) {
+                          self.result([FlutterError errorWithCode:@"flutter_image_picker_copy_video_error"
+                                                          message:@"Could not cache the video file."
+                                                          details:nil]);
+                          self.result = nil;
+                          return;
+                      }
+                  }
+                  videoURL = destination;
+              }
           }
+          self.result(videoURL.path);
+          self.result = nil;
       }
-      self.result(videoURL.path);
-      self.result = nil;
 
   } else {
     UIImage *image = [info objectForKey:UIImagePickerControllerEditedImage];
