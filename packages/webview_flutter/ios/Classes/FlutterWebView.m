@@ -115,8 +115,18 @@
     // https://github.com/flutter/flutter/issues/36228
 
     NSString* initialUrl = args[@"initialUrl"];
+    NSString* htmlString = args[@"htmlString"];
+    NSString* baseUrl = args[@"baseUrl"];
+
     if ([initialUrl isKindOfClass:[NSString class]]) {
       [self loadUrl:initialUrl];
+    }
+    if ([htmlString isKindOfClass:[NSString class]] ) {
+        if ([baseUrl isKindOfClass:[NSString class]]) {
+            [_webView loadHTMLString:htmlString baseURL:[NSURL URLWithString:baseUrl]];
+        } else {
+            [_webView loadHTMLString:htmlString baseURL:NULL];
+        }
     }
   }
   return self;
@@ -137,6 +147,8 @@
     [self onUpdateSettings:call result:result];
   } else if ([[call method] isEqualToString:@"loadUrl"]) {
     [self onLoadUrl:call result:result];
+  } else if ([[call method] isEqualToString:@"loadHTMLString"]) {
+    [self onLoadHtmlString:call result:result];
   } else if ([[call method] isEqualToString:@"canGoBack"]) {
     [self onCanGoBack:call result:result];
   } else if ([[call method] isEqualToString:@"canGoForward"]) {
@@ -190,6 +202,33 @@
   } else {
     result(nil);
   }
+}
+- (bool)loadHtmlString:(NSDictionary<NSString*, id>*)request {
+    
+    if (!request) {
+        return false;
+    }
+    NSString* htmlString = request[@"htmlString"];
+    if ([htmlString isKindOfClass:[NSString class]]) {
+        NSString* baseUrl = request[@"baseUrl"];
+        if ([baseUrl isKindOfClass:[NSString class]]) {
+            [_webView loadHTMLString:htmlString baseURL:[NSURL URLWithString:baseUrl]];
+        } else {
+            [_webView loadHTMLString:htmlString baseURL:NULL];
+        }
+    }
+    return false;
+
+}
+- (void)onLoadHtmlString:(FlutterMethodCall*)call result:(FlutterResult)result  {
+    if (![self loadHtmlString:[call arguments]]) {
+      result([FlutterError
+          errorWithCode:@"loadHtmlString_failed"
+                message:@"Failed parsing the URL"
+                details:[NSString stringWithFormat:@"Request was: '%@'", [call arguments]]]);
+    } else {
+      result(nil);
+    }
 }
 
 - (void)onCanGoBack:(FlutterMethodCall*)call result:(FlutterResult)result {

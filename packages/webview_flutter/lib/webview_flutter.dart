@@ -180,7 +180,7 @@ class JavascriptChannel {
   JavascriptChannel({
     required this.name,
     required this.onMessageReceived,
-  })  : assert(name != null),
+  })   : assert(name != null),
         assert(onMessageReceived != null),
         assert(_validChannelNames.hasMatch(name));
 
@@ -217,6 +217,8 @@ class WebView extends StatefulWidget {
     Key? key,
     this.onWebViewCreated,
     this.initialUrl,
+    this.htmlString,
+    this.baseUrl,
     this.javascriptMode = JavascriptMode.disabled,
     this.javascriptChannels,
     this.navigationDelegate,
@@ -285,6 +287,10 @@ class WebView extends StatefulWidget {
 
   /// The initial URL to load.
   final String? initialUrl;
+
+  final String? htmlString;
+
+  final String? baseUrl;
 
   /// Whether Javascript execution is enabled.
   final JavascriptMode javascriptMode;
@@ -475,6 +481,8 @@ class _WebViewState extends State<WebView> {
 CreationParams _creationParamsfromWidget(WebView widget) {
   return CreationParams(
     initialUrl: widget.initialUrl,
+    htmlString: widget.htmlString,
+    baseUrl: widget.baseUrl,
     webSettings: _webSettingsFromWidget(widget),
     javascriptChannelNames: _extractChannelNames(widget.javascriptChannels),
     userAgent: widget.userAgent,
@@ -647,6 +655,12 @@ class WebViewController {
     assert(url != null);
     _validateUrlString(url);
     return _webViewPlatformController.loadUrl(url, headers);
+  }
+  /// loadHTMLString
+  Future<void> loadHTMLString(String htmlString, {String? baseUrl}) async {
+    assert(htmlString != null);
+    return _webViewPlatformController.loadHTMLString(htmlString,
+        baseUrl: baseUrl);
   }
 
   /// Accessor to the current URL that the WebView is displaying.

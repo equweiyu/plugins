@@ -85,6 +85,15 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
   }
 
   @override
+  Future<void> loadHTMLString(String htmlString, {String? baseUrl}) {
+    assert(htmlString != null);
+    return _channel.invokeMethod<void>('loadHTMLString', <String, dynamic>{
+      'htmlString': htmlString,
+      'baseUrl': baseUrl,
+    });
+  }
+
+  @override
   Future<String?> currentUrl() => _channel.invokeMethod<String>('currentUrl');
 
   @override
@@ -206,6 +215,8 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
   }) {
     return <String, dynamic>{
       'initialUrl': creationParams.initialUrl,
+      'htmlString': creationParams.htmlString,
+      'baseUrl': creationParams.baseUrl,
       'settings': _webSettingsToMap(creationParams.webSettings),
       'javascriptChannelNames': creationParams.javascriptChannelNames.toList(),
       'userAgent': creationParams.userAgent,

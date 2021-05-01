@@ -187,6 +187,13 @@ abstract class WebViewPlatformController {
         "WebView loadUrl is not implemented on the current platform");
   }
 
+  /// loadHTMLString
+  Future<void> loadHTMLString(String htmlString, {String? baseUrl}) async {
+    assert(htmlString != null);
+    throw UnimplementedError(
+        "WebView loadHTMLString is not implemented on the current platform");
+  }
+
   /// Updates the webview settings.
   ///
   /// Any non null field in `settings` will be set as the new setting value.
@@ -450,6 +457,8 @@ class CreationParams {
   /// The `autoMediaPlaybackPolicy` parameter must not be null.
   CreationParams({
     this.initialUrl,
+    this.htmlString,
+    this.baseUrl,
     this.webSettings,
     this.javascriptChannelNames = const <String>{},
     this.userAgent,
@@ -461,6 +470,10 @@ class CreationParams {
   ///
   /// When null the webview will be created without loading any page.
   final String? initialUrl;
+
+  final String? htmlString;
+
+  final String? baseUrl;
 
   /// The initial [WebSettings] for the new webview.
   ///
@@ -490,7 +503,7 @@ class CreationParams {
 
   @override
   String toString() {
-    return '$runtimeType(initialUrl: $initialUrl, settings: $webSettings, javascriptChannelNames: $javascriptChannelNames, UserAgent: $userAgent)';
+    return '$runtimeType(initialUrl: $initialUrl,htmlString: $htmlString,baseUrl: $baseUrl, settings: $webSettings, javascriptChannelNames: $javascriptChannelNames, UserAgent: $userAgent)';
   }
 }
 

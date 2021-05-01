@@ -132,6 +132,15 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
       String url = (String) params.get("initialUrl");
       webView.loadUrl(url);
     }
+    if (params.containsKey("htmlString")) {
+      String htmlString = (String) params.get("htmlString");
+      if (params.containsKey("baseUrl")) {
+        String baseUrl = (String) params.get("baseUrl");
+        webView.loadDataWithBaseURL(baseUrl,htmlString,"text/html","UTF-8",null);
+      } else {
+        webView.loadData(htmlString,"text/html","UTF-8");
+      }
+    }
   }
 
   @Override
@@ -192,6 +201,9 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     switch (methodCall.method) {
       case "loadUrl":
         loadUrl(methodCall, result);
+        break;
+      case "loadHTMLString":
+        loadHTMLString(methodCall, result);
         break;
       case "updateSettings":
         updateSettings(methodCall, result);
@@ -256,6 +268,16 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     }
     webView.loadUrl(url, headers);
     result.success(null);
+  }
+  private  void loadHTMLString(MethodCall methodCall, Result result) {
+    Map<String, Object> request = (Map<String, Object>) methodCall.arguments;
+    String htmlString = (String) request.get("htmlString");
+    String baseUrl = (String) request.get("baseUrl");
+    if (baseUrl == null) {
+      webView.loadData(htmlString,"text/html","UTF-8");
+    } else {
+      webView.loadDataWithBaseURL(baseUrl,htmlString,"text/html","UTF-8",null);
+    }
   }
 
   private void canGoBack(Result result) {
