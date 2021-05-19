@@ -216,6 +216,7 @@
         } else {
             [_webView loadHTMLString:htmlString baseURL:NULL];
         }
+        return true;
     }
     return false;
 
